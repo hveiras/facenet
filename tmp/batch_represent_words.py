@@ -5,6 +5,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
+
 """
 Allows you to generate embeddings from a directory of images in the format:
 
@@ -76,9 +78,6 @@ import facenet
 import numpy as np
 from sklearn.datasets import load_files
 import tensorflow as tf
-from scipy import spatial
-import pandas as pd
-
 
 def main(args):
 
@@ -128,36 +127,24 @@ def main(args):
 			time_avg_forward_pass = (time.time() - start_time) / float(nrof_images)
 			print("Forward pass took avg of %.3f[seconds/image] for %d images\n" % (time_avg_forward_pass, nrof_images))
 
-			# print("Finally saving embeddings and gallery to: %s" % (output_dir))
-			# save the gallery and embeddings (signatures) as numpy arrays to disk
-			# np.save(os.path.join(output_dir, "gallery.npy"), labels_array)
-			# np.save(os.path.join(output_dir, "signatures.npy"), emb_array)
+			for emb_idx, emb in enumerate(emb_array):
+				norm_emb = emb / np.linalg.norm(emb)
+				print(norm_emb)
+				encoded_word = ""
+				q = 30
+				for i, wi in enumerate(norm_emb):
+					val = wi * q
+					val_abs = math.fabs(val)
+					prefix = ("F" if val > 0 else "f")
+					if(val_abs < 0.5):
+						val = 0
+					else:
+						val = math.floor(val_abs)
+					for j in range(val):
+						encoded_word += prefix + str(i)
 
-			similarity = 1 - spatial.distance.cosine(emb_array[0], emb_array[1])
-			print('similarity')
-			print(similarity)
-
-			labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]
-			cut1 = pd.qcut(emb_array[0], 16, labels)
-			cut2 = pd.qcut(emb_array[1], 16, labels)
-			word_array1 = list(map(lambda x: cut1.categories[x], cut1.codes))
-			word_array2 = list(map(lambda x: cut2.categories[x], cut2.codes))
-			print('Word embeddings')
-			print(''.join(word_array1))
-			print(''.join(word_array2))
-
-			# flat_emb_array = [item for sublist in emb_array for item in sublist]
-			# print('Average:')
-			# print(np.mean(flat_emb_array))
-			# print('Std')
-			# all_emb_std = np.std(flat_emb_array)
-			# print(all_emb_std)
-
-			# for emb in emb_array:
-			# 	ser = pd.qcut(emb, 16,
-			# 				  labels=["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"])
-			# 	word_array = list(map(lambda x: ser.categories[x], ser.codes))
-			# 	print(''.join(word_array))
+				print("----> " + str(emb_idx))
+				print(encoded_word)
 
 def parse_arguments(argv):
 	parser = argparse.ArgumentParser(description="Batch-represent face embeddings from a given data directory")
